@@ -11,16 +11,13 @@ Displays a random space on the dashboard sidebar
 - No admin configuration
 - Random Public to Guests Spaces on Dashboard for Guests
 - Random Public to Members Spaces on Dashboard for Members
+- Minimum Public Space required is set to 3 by Default.
 
 ### Languages
 
 - English (EN_GB) - *Default*
 - Pусский (RU)
 
-## Requirements
-
-- At least 5 Public Spaces (The script will try again in event of private space found in it's roll)
-- A ratio of 1/4 of all spaces should be public
 
 ### Installation
 
