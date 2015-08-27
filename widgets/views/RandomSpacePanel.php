@@ -42,6 +42,9 @@
 		} else {
 			$followText = HHtml::postLink(Yii::t('RandomSpaceModule.base', "Follow"), $space->createUrl('//space/space/follow'), array('class' => 'btn btn-success'));
 		}
+		if (Yii::app()->user->isGuest) {
+			$followText = HHtml::link(Yii::t('RandomSpaceModule.base', "View"), $space->getUrl(), array('class' => 'btn btn-success'));
+		}
 	}
  
 ?>
