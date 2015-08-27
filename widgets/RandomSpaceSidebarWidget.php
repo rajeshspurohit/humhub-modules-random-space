@@ -5,9 +5,16 @@
  * to the Dashboard.
  *
  * @package humhub-modules-randomspace
- * @author Jordan Thompson
+ * @author Jordan Thompson, Rajesh Purohit
  */
 class RandomSpaceSidebarWidget extends HWidget {
+	
+	/**
+     * Limit Check for Minimum Spaces available.
+     * 
+     * @var int
+     */
+    public $totalSpacelimit = 1;
     
     /**
      * Render random space information
@@ -15,20 +22,36 @@ class RandomSpaceSidebarWidget extends HWidget {
      * @render random space widget
      */
     public function run() {
+    	
         $css = Yii::app()->assetManager->publish(dirname(__FILE__) . '/../css', true, 0, defined('YII_DEBUG'));
         Yii::app()->clientScript->registerCssFile($css . '/randomspace.css');
-        $spaceInfo = $this->getRandomSpace();
-        if ( is_object($spaceInfo[0]) && is_array($spaceInfo[1]) ) {
-            $this->render ( 'RandomSpacePanel', array (
-                'css' => $css,
-                'space' => $spaceInfo[0],
-                'members' => $spaceInfo[1]
-            ) );
-        // Something went wrong... try again
-        } else {
-            $this->run();
-        }
-
+		
+		//If user is guest then look for spaces with visibility set for all.
+		if (Yii::app()->user->isGuest) {
+			$sql = "SELECT * FROM space WHERE visibility =" . Space::VISIBILITY_ALL . " AND status =" . Space::STATUS_ENABLED;
+		} else {
+			$sql = "SELECT * FROM space WHERE visibility IN (" . Space::VISIBILITY_ALL . "," . Space::VISIBILITY_REGISTERED_ONLY . ") AND status =" . Space::STATUS_ENABLED;
+		}
+		
+		//Count public spaces.
+		$spaces_record = Space::model()->findAllBySql($sql);
+		
+		if (count($spaces_record) < (int)$this->totalSpacelimit) {
+			return;
+		}
+		
+		$maxCount = count($spaces_record);
+		if ($maxCount !==null && $maxCount !==0) {
+			 $randNum = rand(0,($maxCount-1));
+			 $spaceInfo = $this->getRandomSpace($randNum);
+		     if ( is_object($spaceInfo[0]) && is_array($spaceInfo[1]) ) {
+		         $this->render ( 'RandomSpacePanel', array (
+		             'css' => $css, 
+		             'space' => $spaceInfo[0],
+		             'members' => $spaceInfo[1]
+		         ) );
+		     } 
+		}
     }
     
     
@@ -37,31 +60,37 @@ class RandomSpaceSidebarWidget extends HWidget {
      *
      * @return array of space and membership information from Space Model.
      */
-    private function getRandomSpace() {
+    private function getRandomSpace($randNum) {
     
-        $max = Space::model()->count();
-        $randId = rand(0,$max);
-        $space = Space::model()->find(array('offset'=>$randId));
-	    $spaceType = (Yii::app()->user->isGuest) ? 1 : 2;
-        if ( is_object($space) && is_array($space->attributes) ) {
-            if ($space->attributes['visibility'] == $spaceType) {
-                $members = array();
-                $membership = Yii::app()->db->createCommand()
-                        ->select('user_id')
-                    ->from('space_membership')
-                    ->where('space_id=:id', array(':id'=>$space->id))
-                    ->queryAll();
-                foreach ( $membership as $member ) {
-                    $members[] = User::model()->findByPk($member['user_id']);
-                }
-                return array($space, $members);
-            // Something went wrong.. try again
-            } else {
-                $this->getRandomSpace();
-            }
-        } else {
-            $this->getRandomSpace();
-        }
+        $criteria = new CDbCriteria;
+        $criteria->limit = 1;
+		$criteria->offset = $randNum;
+		
+		if (Yii::app()->user->isGuest) {
+			$criteria->condition = 'visibility =' . Space::VISIBILITY_ALL . " AND status =" . Space::STATUS_ENABLED;
+		} else {
+			$criteria->condition = "visibility IN (" . Space::VISIBILITY_ALL . ",". Space::VISIBILITY_REGISTERED_ONLY . ") AND status =" . Space::STATUS_ENABLED;
+		}
+		
+        $spaces = Space::model()->findAll($criteria);
+		
+        if ( !empty($spaces)) {
+        	foreach ($spaces as $space) {
+				$members = array();
+	            $membership = Yii::app()->db->createCommand()
+	                    ->select('user_id')
+	                	->from('space_membership')
+	                	->where('space_id=:id', array(':id'=>$space->id))
+	                	->queryAll();
+				if ($membership !== null) {
+					foreach ( $membership as $member ) {
+	                $members[] = User::model()->findByPk($member['user_id']);
+	            	}
+	            	return array($space, $members);
+				}	
+			}
+            
+        } 
     }
     
     
