@@ -35,7 +35,7 @@ class RandomSpaceModule extends HWebModule
     public static function onSidebarInit($event) {
 
         if (Yii::app()->moduleManager->isEnabled('randomspace')) {
-            $event->sender->addWidget('application.modules.randomspace.widgets.RandomSpaceSidebarWidget', array(), array('sortOrder' => 2)); // Ensure this widget is ontop unless otherwise edited
+            $event->sender->addWidget('application.modules.randomspace.widgets.RandomSpaceSidebarWidget', array('totalSpacelimit' => 3), array('sortOrder' => 2)); // Ensure this widget is ontop unless otherwise edited
         }
         
     }
